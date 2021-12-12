@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { PageLayout } from 'src/pages/PageLayout';
-import { useGameContext } from './contexts/GameContext';
+import { useGetGameDetails } from './hooks/useGetGameDetails';
 
 export const GameGuard = () => {
-  const { isGameInProgress } = useGameContext();
+  const { isGameInProgress } = useGetGameDetails();
 
   const location = useLocation();
   const [requestedLocation, setRequestedLocation] = useState<string>(null);

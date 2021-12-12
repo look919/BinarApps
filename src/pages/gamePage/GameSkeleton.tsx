@@ -14,3 +14,9 @@ export const GameSkeleton = () => (
     </Skeleton>
   </>
 );
+
+export const ButtonSkeleton = () => (
+  <Skeleton>
+    <Button>Finish game</Button>
+  </Skeleton>
+);

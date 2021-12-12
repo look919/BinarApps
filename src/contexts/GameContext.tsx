@@ -1,45 +1,46 @@
 import React, { FC, useState } from 'react';
 import { useNavigate } from 'react-router';
+import { useStoreGameData } from 'src/hooks/useStoreGameData';
 import { ReactSetStateAction } from 'src/utils/types';
 
+type GameStage = 'NOT_STARTED' | 'IN_PROGRESS' | 'ANSWERS_CHECKED' | 'RESULT_PAGE';
+
 interface ContextValues {
-  isGameInProgress: boolean;
+  points: number;
+  gameStage: GameStage;
   handleStartGame: () => void;
   setCorrectWords: ReactSetStateAction<string[]>;
   handlePickWord: (pickedWord: string) => void;
-  isWordPicked: (word: string) => boolean;
+  isWordPickedByUser: (word: string) => boolean;
   isCorrectWordPicked: (word: string) => boolean;
-  countPointsAndGoToTheResultPage: () => void;
-  points: number;
+  checkAnswersAndCountPoints: () => void;
   resetGame: () => void;
+  finishGame: () => void;
 }
 
 const GameContext = React.createContext<ContextValues | undefined>(undefined);
 
 const GameContextProvider: FC = ({ children }) => {
   const navigate = useNavigate();
-  const [isGameInProgress, setIsGameInProgress] = useState(false);
-  const [correctWords, setCorrectWords] = useState<string[]>([]);
-  const [userWords, setUserWords] = useState<string[]>([]);
-  const [points, setPoints] = useState(0);
+  const [gameStage, setGameStage] = useState<GameStage>('NOT_STARTED');
+  const { userWords, correctWords, points, setUserWords, setCorrectWords, setPoints, resetGameData } = useStoreGameData();
 
   const handleStartGame = () => {
-    setIsGameInProgress(true);
+    setGameStage('IN_PROGRESS');
     navigate('/app/game');
   };
 
-  const isWordPicked = (word: string) => userWords.includes(word);
+  const isWordPickedByUser = (word: string) => userWords.includes(word);
   const isCorrectWordPicked = (word: string) => correctWords.includes(word);
 
   const handlePickWord = (pickedWord: string) => {
-    const wordWasAlreadyPicker = isWordPicked(pickedWord);
-    if (wordWasAlreadyPicker) return;
-
-    setUserWords(prevState => [...prevState, pickedWord]);
-    setPoints(prevState => (isCorrectWordPicked(pickedWord) ? prevState + 2 : prevState - 1));
+    const wordWasAlreadyPicked = isWordPickedByUser(pickedWord);
+    wordWasAlreadyPicked
+      ? setUserWords(prevState => prevState.filter(word => word !== pickedWord))
+      : setUserWords(prevState => [...prevState, pickedWord]);
   };
 
-  const countPointsAndGoToTheResultPage = () => {
+  const checkAnswersAndCountPoints = () => {
     let finalGameState = {
       correctWords: 0,
       badWords: 0,
@@ -50,33 +51,36 @@ const GameContextProvider: FC = ({ children }) => {
       isCorrectWordPicked(wordPickedByUser) ? finalGameState.correctWords++ : finalGameState.badWords++;
     });
 
-    finalGameState.unmarkedCorrectWords = correctWords.filter(correctWord => !userWords.includes(correctWord)).length;
+    finalGameState.unmarkedCorrectWords = correctWords.filter(correctWord => !isWordPickedByUser(correctWord)).length;
 
     const gameResult = finalGameState.correctWords * 2 - (finalGameState.badWords + finalGameState.unmarkedCorrectWords);
 
+    setGameStage('ANSWERS_CHECKED');
     setPoints(gameResult);
+  };
+
+  const finishGame = () => {
+    setGameStage('RESULT_PAGE');
     navigate('/app/game-result');
   };
 
   const resetGame = () => {
-    setPoints(0);
-    setCorrectWords([]);
-    setUserWords([]);
-    setIsGameInProgress(false);
-
+    setGameStage('NOT_STARTED');
+    resetGameData();
     navigate('/login');
   };
 
   const value = {
-    isGameInProgress,
-    handleStartGame,
-    setCorrectWords,
-    handlePickWord,
-    isWordPicked,
-    isCorrectWordPicked,
-    countPointsAndGoToTheResultPage,
     points,
-    resetGame
+    gameStage,
+    setCorrectWords,
+    handleStartGame,
+    handlePickWord,
+    isWordPickedByUser,
+    isCorrectWordPicked,
+    checkAnswersAndCountPoints,
+    resetGame,
+    finishGame
   };
 
   return <GameContext.Provider value={value}>{children}</GameContext.Provider>;

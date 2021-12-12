@@ -1,10 +1,12 @@
 import React from 'react';
+import clsx from 'clsx';
 import { Box, Paper, Typography, makeStyles } from '@material-ui/core';
-import { Button } from 'src/components';
 import { useGetRandomQuestion } from 'src/hooks/useGetRandomQuestion';
 import { useGameContext } from 'src/contexts/GameContext';
+import { useGetGameDetails } from 'src/hooks/useGetGameDetails';
 import { GameSkeleton } from './GameSkeleton';
 import { SingleWord, WordChoosingResult } from './GameWords';
+import { GameButton } from './GameButton';
 
 const useStyles = makeStyles({
   wordsCloud: {
@@ -21,15 +23,19 @@ const useStyles = makeStyles({
     gridRowGap: '5px',
     alignItems: 'center',
     justifyItems: 'center',
-    padding: '0.5rem 1rem',
+    padding: '0.8rem 1.6rem',
     cursor: 'pointer'
+  },
+  disableWordActions: {
+    pointerEvents: 'none'
   }
 });
 
 const GamePage = () => {
   const classes = useStyles();
   const question = useGetRandomQuestion();
-  const { handlePickWord, isWordPicked, countPointsAndGoToTheResultPage } = useGameContext();
+  const { handlePickWord, isWordPickedByUser } = useGameContext();
+  const { areAnswersRevealed } = useGetGameDetails();
 
   if (question.isLoading) return <GameSkeleton />;
 
@@ -41,17 +47,21 @@ const GamePage = () => {
         <Typography variant='h5'>{questionData.question}</Typography>
         <Paper className={classes.wordsCloud}>
           {questionData.all_words.map(word => {
-            const wasWordAlreadyPicked = isWordPicked(word);
+            const wasWordAlreadyPicked = isWordPickedByUser(word);
 
             return (
-              <Box key={word} onClick={() => handlePickWord(word)} className={classes.singleWordContainer}>
+              <Box
+                key={word}
+                onClick={() => handlePickWord(word)}
+                className={clsx(classes.singleWordContainer, areAnswersRevealed && classes.disableWordActions)}
+              >
                 {wasWordAlreadyPicked && <WordChoosingResult word={word} />}
                 <SingleWord word={word} />
               </Box>
             );
           })}
         </Paper>
-        <Button onClick={countPointsAndGoToTheResultPage}>Finish game</Button>
+        <GameButton />
       </>
     );
   }

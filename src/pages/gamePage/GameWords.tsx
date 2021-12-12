@@ -2,19 +2,23 @@ import React from 'react';
 import clsx from 'clsx';
 import { Typography, makeStyles } from '@material-ui/core';
 import { useGameContext } from 'src/contexts/GameContext';
+import { useGetGameDetails } from 'src/hooks/useGetGameDetails';
 
 const useStyles = makeStyles({
   singleWord: {
     gridRow: '2 / 3'
   },
-  correctWord: {
+  correctWordColor: {
     color: 'lightgreen'
   },
-  badWord: {
+  badWordColor: {
     color: 'red'
   },
-  notPickedWord: {
+  hideColors: {
     color: 'inherit'
+  },
+  pickedWord: {
+    fontWeight: 600
   }
 });
 
@@ -24,18 +28,21 @@ interface SingleWordProps {
 
 export const SingleWord = ({ word }: SingleWordProps) => {
   const classes = useStyles();
-  const { isWordPicked, isCorrectWordPicked } = useGameContext();
+  const { isWordPickedByUser, isCorrectWordPicked } = useGameContext();
+  const { areAnswersRevealed } = useGetGameDetails();
 
-  const isWordNotPickedYet = !isWordPicked(word);
-  const isWordCorrect = isCorrectWordPicked(word);
+  const isWordPicked = isWordPickedByUser(word);
+  const isWordPickedCorrect = isWordPicked && isCorrectWordPicked(word);
+  const shouldNotSwitchColorYet = !areAnswersRevealed;
 
   return (
     <Typography
       variant='body1'
       className={clsx(
         classes.singleWord,
-        isWordCorrect ? classes.correctWord : classes.badWord,
-        isWordNotPickedYet && classes.notPickedWord
+        isWordPickedCorrect ? classes.correctWordColor : classes.badWordColor,
+        shouldNotSwitchColorYet && classes.hideColors,
+        isWordPicked ? classes.pickedWord : classes.hideColors
       )}
     >
       {word}
@@ -46,10 +53,14 @@ export const SingleWord = ({ word }: SingleWordProps) => {
 export const WordChoosingResult = ({ word }: SingleWordProps) => {
   const classes = useStyles();
   const { isCorrectWordPicked } = useGameContext();
+  const { areAnswersRevealed } = useGetGameDetails();
+
+  if (!areAnswersRevealed) return null;
+
   const isWordCorrect = isCorrectWordPicked(word);
 
   return (
-    <Typography variant='body1' className={isWordCorrect ? classes.correctWord : classes.badWord}>
+    <Typography variant='body1' className={isWordCorrect ? classes.correctWordColor : classes.badWordColor}>
       {isWordCorrect ? 'Good' : 'Bad'}
     </Typography>
   );
